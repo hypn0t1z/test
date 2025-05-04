@@ -1,13 +1,10 @@
 name: Sync, build and deploy Plasmic app
-
 permissions:
   contents: write
   pull-requests: write
-
 on:
-  push:
-    branches: [ main ]
-
+  repository_dispatch:
+    types: [plasmic]
 jobs:
   job:
     name: Sync, build and deploy
@@ -31,47 +28,31 @@ jobs:
         uses: actions/cache@v4
         with:
           key: lock-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
-          path: ${{ github.event.client_payload.data.directory || '.' }}/node_modules
+          path: ${{ github.event.client_payload.data.directory }}/node_modules
       
       - id: create_plasmic_config
         name: Creating Plasmic configuration file...
         run: |
-          mkdir -p ${{ github.event.client_payload.data.directory || '.' }}
-          cat > ${{ github.event.client_payload.data.directory || '.' }}/plasmic.json << 'EOL'
+          # Liệt kê các biến để debug
+          echo "Directory: ${{ github.event.client_payload.data.directory }}"
+          
+          # Đảm bảo directory không null và tạo thư mục
+          DIRECTORY=${{ github.event.client_payload.data.directory || 'tmp-cpa' }}
+          echo "Using directory: $DIRECTORY"
+          mkdir -p $DIRECTORY
+          
+          # Tạo file plasmic.json trong thư mục tmp-cpa (thư mục mặc định được tạo bởi Vite)
+          cat > $DIRECTORY/plasmic.json << 'EOL'
           {
             "host": "https://suinova.var-meta.com",
             "projects": []
           }
           EOL
-          echo "Created plasmic.json with custom configuration"
-      
-      # Install dependencies if they don't exist
-      - id: check_package_json
-        name: Check if package.json exists
-        run: |
-          DIRECTORY="${{ github.event.client_payload.data.directory || '.' }}"
-          if [ ! -f "$DIRECTORY/package.json" ]; then
-            echo "Creating package.json"
-            echo '{
-              "name": "plasmic-app",
-              "private": true,
-              "version": "0.0.0",
-              "type": "module",
-              "scripts": {
-                "dev": "vite",
-                "build": "tsc && vite build",
-                "preview": "vite preview"
-              }
-            }' > "$DIRECTORY/package.json"
-          fi
-      
-      # Create plasmic-host.js file for custom host configuration
-      - id: create_plasmic_host
-        name: Create plasmic host configuration
-        run: |
-          DIRECTORY="${{ github.event.client_payload.data.directory || '.' }}"
-          echo 'process.env.PLASMIC_HOST = "https://suinova.var-meta.com";' > "$DIRECTORY/plasmic-host.js"
-          echo "Created plasmic-host.js with custom host configuration"
+          echo "Created plasmic.json with custom configuration in $DIRECTORY"
+          
+          # Hiển thị nội dung file để xác nhận
+          echo "Content of plasmic.json:"
+          cat $DIRECTORY/plasmic.json
       
       - id: init
         name: Initializing Plasmic app...
@@ -80,7 +61,7 @@ jobs:
           run: init
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.event.client_payload.data.branch }}
-          directory: ${{ github.event.client_payload.data.directory }}
+          directory: ${{ github.event.client_payload.data.directory || 'tmp-cpa' }}
           project_id: ${{ github.event.client_payload.data.projectId }}
           project_api_token: ${{ github.event.client_payload.data.projectApiToken }}
           platform: ${{ github.event.client_payload.data.platform }}
@@ -88,32 +69,6 @@ jobs:
           scheme: ${{ github.event.client_payload.data.scheme }}
           title: ${{ github.event.client_payload.data.title }}
           description: ${{ github.event.client_payload.data.description }}
-      
-      # Add a step to ensure the plasmic.json file is in the correct location after initialization
-      - id: verify_plasmic_config
-        name: Verify Plasmic configuration
-        run: |
-          DIRECTORY="${{ github.event.client_payload.data.directory || '.' }}"
-          if [ ! -f "$DIRECTORY/plasmic.json" ]; then
-            echo "Copying plasmic.json to correct location"
-            # First check if it exists in tmp-cpa
-            if [ -f "tmp-cpa/plasmic.json" ]; then
-              cp tmp-cpa/plasmic.json "$DIRECTORY/"
-            else
-              # Recreate it
-              cat > "$DIRECTORY/plasmic.json" << 'EOL'
-              {
-                "host": "https://suinova.var-meta.com",
-                "projects": [
-                  {
-                    "projectId": "${{ github.event.client_payload.data.projectId }}",
-                    "projectApiToken": "${{ github.event.client_payload.data.projectApiToken }}"
-                  }
-                ]
-              }
-              EOL
-            fi
-          fi
       
       - id: sync
         name: Syncing Plasmic project...
@@ -123,7 +78,7 @@ jobs:
           run: sync
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.event.client_payload.data.branch }}
-          directory: ${{ github.event.client_payload.data.directory }}
+          directory: ${{ github.event.client_payload.data.directory || 'tmp-cpa' }}
           project_id: ${{ github.event.client_payload.data.projectId }}
           project_api_token: ${{ github.event.client_payload.data.projectApiToken }}
           sync_action: ${{ github.event.client_payload.data.syncAction }}
@@ -137,7 +92,7 @@ jobs:
         with:
           run: build
           branch: ${{ github.event.client_payload.data.branch }}
-          directory: ${{ github.event.client_payload.data.directory }}
+          directory: ${{ github.event.client_payload.data.directory || 'tmp-cpa' }}
           platform: ${{ github.event.client_payload.data.platform }}
       
       - id: pr
