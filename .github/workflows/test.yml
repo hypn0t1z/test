@@ -46,7 +46,7 @@ on:
       commitMessage:
         description: 'Commit message (title and description)'
         required: false
-        default: 'Update from Plasmic\n\nSyncing latest changes from Plasmic'
+        default: 'Update from Plasmic'
 
 jobs:
   job:
@@ -94,8 +94,8 @@ jobs:
           platform: ${{ github.event.client_payload.data.platform || 'nextjs' }}
           language: ${{ github.event.client_payload.data.language || 'ts' }}
           scheme: ${{ github.event.client_payload.data.scheme || 'codegen' }}
-          title: ${{ split(github.event.client_payload.data.commitMessage, '\n')[0] || 'Update from Plasmic' }}
-          description: ${{ join(split(github.event.client_payload.data.commitMessage, '\n')[1..], '\n') || 'Syncing latest changes from Plasmic' }}
+          title: ${{ github.event.client_payload.data.commitMessage || 'Update from Plasmic' }}
+          description: ${{ github.event.client_payload.data.commitMessage || 'Update from Plasmic' }}
       - id: sync
         name: Syncing Plasmic project...
         if: ${{ github.event.client_payload.data.scheme == 'codegen' && steps.init.outputs.synced != 'true' }}
@@ -108,8 +108,8 @@ jobs:
           project_id: ${{ github.event.client_payload.data.projectId }}
           project_api_token: ${{ github.event.client_payload.data.projectApiToken }}
           sync_action: ${{ github.event.client_payload.data.syncAction || 'commit' }}
-          title: ${{ split(github.event.client_payload.data.commitMessage, '\n')[0] || 'Update from Plasmic' }}
-          description: ${{ join(split(github.event.client_payload.data.commitMessage, '\n')[1..], '\n') || 'Syncing latest changes from Plasmic' }}
+          title: ${{ github.event.client_payload.data.commitMessage || 'Update from Plasmic' }}
+          description: ${{ github.event.client_payload.data.commitMessage || 'Update from Plasmic' }}
       - id: build
         name: Building Plasmic app...
         if: ${{ github.event.client_payload.data.publish == 'true' }}
@@ -126,4 +126,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           source_branch: ${{ steps.sync.outputs.new_branch }}
-          destination_branch: ${{ github.event.client_payload.data.branch || 'main' }}
+          destination_branch: ${{ github.event.client_payload.data.branch || 'main' }} 
