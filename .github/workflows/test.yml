@@ -35,14 +35,6 @@ on:
         description: 'Language (js or ts)'
         required: false
         default: 'ts'
-      title:
-        description: 'Commit title'
-        required: false
-        default: 'Update from Plasmic'
-      description:
-        description: 'Commit description'
-        required: false
-        default: 'Syncing latest changes from Plasmic'
       syncAction:
         description: 'Sync action (commit or pr)'
         required: false
@@ -51,6 +43,10 @@ on:
         description: 'Whether to publish after build'
         required: false
         default: 'false'
+      commitMessage:
+        description: 'Commit message (title and description)'
+        required: false
+        default: 'Update from Plasmic\n\nSyncing latest changes from Plasmic'
 
 jobs:
   job:
@@ -98,8 +94,8 @@ jobs:
           platform: ${{ github.event.client_payload.data.platform || 'nextjs' }}
           language: ${{ github.event.client_payload.data.language || 'ts' }}
           scheme: ${{ github.event.client_payload.data.scheme || 'codegen' }}
-          title: ${{ github.event.client_payload.data.title || 'Update from Plasmic' }}
-          description: ${{ github.event.client_payload.data.description || 'Syncing latest changes from Plasmic' }}
+          title: ${{ split(github.event.client_payload.data.commitMessage, '\n')[0] || 'Update from Plasmic' }}
+          description: ${{ join(split(github.event.client_payload.data.commitMessage, '\n')[1..], '\n') || 'Syncing latest changes from Plasmic' }}
       - id: sync
         name: Syncing Plasmic project...
         if: ${{ github.event.client_payload.data.scheme == 'codegen' && steps.init.outputs.synced != 'true' }}
@@ -112,8 +108,8 @@ jobs:
           project_id: ${{ github.event.client_payload.data.projectId }}
           project_api_token: ${{ github.event.client_payload.data.projectApiToken }}
           sync_action: ${{ github.event.client_payload.data.syncAction || 'commit' }}
-          title: ${{ github.event.client_payload.data.title || 'Update from Plasmic' }}
-          description: ${{ github.event.client_payload.data.description || 'Syncing latest changes from Plasmic' }}
+          title: ${{ split(github.event.client_payload.data.commitMessage, '\n')[0] || 'Update from Plasmic' }}
+          description: ${{ join(split(github.event.client_payload.data.commitMessage, '\n')[1..], '\n') || 'Syncing latest changes from Plasmic' }}
       - id: build
         name: Building Plasmic app...
         if: ${{ github.event.client_payload.data.publish == 'true' }}
