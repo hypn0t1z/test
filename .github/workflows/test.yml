@@ -83,7 +83,7 @@ jobs:
       #     echo "Created plasmic.json with custom configuration"
       - id: init
         name: Initializing Plasmic app...
-        uses: hypn0t1z/plasmic-action@v1.0.1
+        uses: hypn0t1z/plasmic-action@v1.0.2
         with:
           run: init
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -99,7 +99,7 @@ jobs:
       - id: sync
         name: Syncing Plasmic project...
         if: ${{ github.event.client_payload.data.scheme == 'codegen' && steps.init.outputs.synced != 'true' }}
-        uses: hypn0t1z/plasmic-action@v1.0.1
+        uses: hypn0t1z/plasmic-action@v1.0.2
         with:
           run: sync
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -113,7 +113,7 @@ jobs:
       - id: build
         name: Building Plasmic app...
         if: ${{ github.event.client_payload.data.publish == 'true' }}
-        uses: hypn0t1z/plasmic-action@v1.0.1
+        uses: hypn0t1z/plasmic-action@v1.0.2
         with:
           run: build
           branch: ${{ github.event.client_payload.data.branch || 'main' }}
